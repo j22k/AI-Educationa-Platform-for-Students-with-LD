@@ -9,6 +9,7 @@ const AuthPage = () => {
     confirmPassword: ''
   });
 
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -27,7 +28,8 @@ const AuthPage = () => {
 
     try {
       const endpoint = isLogin ? '/login' : '/signup';
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +38,11 @@ const AuthPage = () => {
       });
       
       const data = await response.json();
-      if (response.ok) {
+      console.log(data);
+      console.log(response);
+      
+      
+      if (data.status) {
         alert(isLogin ? 'Login successful' : 'Signup successful');
         if (!isLogin) setIsLogin(true);
       } else {
@@ -246,8 +252,8 @@ const AuthPage = () => {
 
           {isLogin && (
             <div style={formStyle.forgotPassword}>
-              <a href="#" style={formStyle.link}>Forgot password?</a>
-            </div>
+            <a href="#" style={formStyle.link}>Forgot password?</a>
+          </div>
           )}
 
           <button type="submit" style={formStyle.button}>

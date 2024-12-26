@@ -23,7 +23,6 @@ def signup_route():
         email = data.get('email')
         password = data.get('password')
         response = signup(name, email, password)
-        print(response)
         return jsonify(response)
     except Exception as e:
         print(f"Error in signup: {str(e)}")  # Log the error
