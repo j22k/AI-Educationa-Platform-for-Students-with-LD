@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AuthPage = () => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
@@ -9,7 +11,7 @@ const AuthPage = () => {
     confirmPassword: ''
   });
 
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -20,7 +22,7 @@ const AuthPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!isLogin && formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -36,15 +38,19 @@ const AuthPage = () => {
         },
         body: JSON.stringify(formData)
       });
-      
+
       const data = await response.json();
       console.log(data);
-      console.log(response);
-      
-      
+
+
       if (data.status) {
         alert(isLogin ? 'Login successful' : 'Signup successful');
+        // Store user ID and name in local storage
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('name', data.name);
+
         if (!isLogin) setIsLogin(true);
+        navigate('/dash');
       } else {
         alert(data.message || 'Operation failed');
       }
@@ -252,8 +258,8 @@ const AuthPage = () => {
 
           {isLogin && (
             <div style={formStyle.forgotPassword}>
-            <a href="#" style={formStyle.link}>Forgot password?</a>
-          </div>
+              <a href="#" style={formStyle.link}>Forgot password?</a>
+            </div>
           )}
 
           <button type="submit" style={formStyle.button}>
