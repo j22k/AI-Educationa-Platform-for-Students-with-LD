@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Stethoscope } from 'lucide-react';
 
 let DiagnosisFlow = ({ isDiagnosed }) => {
   console.log(isDiagnosed);
+  const navigate = useNavigate();
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -24,7 +26,8 @@ let DiagnosisFlow = ({ isDiagnosed }) => {
               <ArrowRight className="w-5 h-5" />
             </button>
           ) : (
-            <button className="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+            <button className="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+            onClick={() => navigate('/diagnosing')}>
               <Stethoscope className="w-5 h-5" />
               <span>Start Diagnosis</span>
             </button>
@@ -34,6 +37,7 @@ let DiagnosisFlow = ({ isDiagnosed }) => {
               ? 'Your learning path is personalized based on your diagnosis'
               : 'This will take approximately 15 minutes'}
           </div>
+        
         </div>
       </div>
     </div>
