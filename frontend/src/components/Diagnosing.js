@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import FloatingCamera from './FloatingCamera';
+import DysgraphiaAssessment from './DysgraphiaAssessment';
+
 
 const ThreeScene = ({ containerId, modelPath }) => {
   const mountRef = useRef(null);
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
   const cameraPosition = useRef({ x: 0, y: 0, z: 5 });
-
+ 
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -103,6 +105,7 @@ const ThreeScene = ({ containerId, modelPath }) => {
 
     window.addEventListener('resize', handleResize);
 
+
     return () => {
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('mousedown', handleMouseDown);
@@ -122,24 +125,25 @@ const ThreeViewer = () => {
 
   return (
     <div className="flex flex-col w-full h-screen p-4 gap-4">
-      <div className="flex gap-4 h-3/4">
-        <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
-          <ThreeScene containerId="viewer1" modelPath={modelPath} />
-        </div>
-
-        <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
-          <ThreeScene containerId="viewer2" modelPath={modelPath} />
-        </div>
+    <div className="flex gap-4 h-3/4">
+      <div className="w-1/2 bg-white rounded-lg shadow-md p-4 overflow-auto">
+        <DysgraphiaAssessment  />
       </div>
 
-      <div className="w-full bg-white rounded-lg shadow-md p-4">
-        <h3 className="font-semibold mb-2">Subtitles</h3>
-        <div className="text-sm text-gray-600">
-          {subtitle}
-        </div>
+      <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
+        <ThreeScene containerId="viewer2" modelPath={modelPath} />
       </div>
-       <FloatingCamera />
     </div>
+
+    <div className="w-full bg-white rounded-lg shadow-md p-4">
+      <h3 className="font-semibold mb-2">Assessment Guidance</h3>
+      <div className="text-sm text-gray-600">
+        {subtitle}
+      </div>
+    </div>
+    {/* <FloatingCamera /> */}
+  </div>
+
   );
 };
 

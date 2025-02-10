@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const FloatingCamera = () => {
+const FloatingCamera = ({ onEmotionCapture }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [result, setResult] = useState(null);
@@ -28,7 +28,7 @@ const FloatingCamera = () => {
 
     const intervalId = setInterval(() => {
       handleCapture();
-    }, 1000); // Capture frame every second
+    }, 5000); // Capture frame every 5 seconds to reduce load
 
     return () => {
       clearInterval(intervalId);
@@ -59,26 +59,18 @@ const FloatingCamera = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log(response.data.emotion);
       
-      setResult(response.data.emotion);
-      // drawRectangles(response.data.faces);
+      const emotion = response.data.emotion;
+      setResult(emotion);
+      
+      // Capture emotion for parent component
+      if (onEmotionCapture) {
+        onEmotionCapture(emotion);
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
     }
   };
-
-  // const drawRectangles = (faces) => {
-  //   const canvas = canvasRef.current;
-  //   const context = canvas.getContext('2d');
-  //   context.clearRect(0, 0, canvas.width, canvas.height);
-  //   context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-  //   context.strokeStyle = 'red';
-  //   context.lineWidth = 2;
-  //   faces.forEach(face => {
-  //     context.strokeRect(face.x, face.y, face.w, face.h);
-  //   });
-  // };
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -131,7 +123,7 @@ const FloatingCamera = () => {
       />
       {result && (
         <div className="p-2 text-sm">
-          <p>{result}</p>
+          <p>Detected Emotion: {result}</p>
         </div>
       )}
     </div>

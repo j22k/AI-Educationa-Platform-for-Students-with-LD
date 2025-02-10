@@ -37,3 +37,19 @@ def check_diagnosed(user_id):
         return {"isDiagnosed": user.get("isDiagnosed", False)}
     else:
         return {"message": "User not found"}, 404
+    
+def HistoryAssesment(data):
+    user_id = data.get("userId")
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+
+    if not user:
+        return {"status": False, "message": "User not found"}, 404
+    
+    # Check if assessment already exists for this user
+    existing_assessment = db.history.find_one({"userId": user_id})
+    if existing_assessment:
+        return {"status": False, "message": "Assessment already exists for this user"}
+
+    # If no existing assessment, insert new one
+    db.history.insert_one({"userId": user_id, "assessmentData": data["assessmentData"]})
+    return {"status": True, "message": "Assessment data saved successfully"}

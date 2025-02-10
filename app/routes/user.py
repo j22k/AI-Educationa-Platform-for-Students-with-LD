@@ -6,7 +6,7 @@ import torch
 from PIL import Image
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
-from app.Helpers.userHelper import check_diagnosed  # Adjust import as per project structure
+from app.Helpers.userHelper import check_diagnosed,HistoryAssesment # Adjust import as per project structure
 
 bp_user = Blueprint('user', __name__)
 mp_face_mesh = mp.solutions.face_mesh
@@ -68,4 +68,15 @@ def face_detection_route():
                 return jsonify({"message": "No face detected"}), 400
     except Exception as e:
         print(f"Error in face_detection: {str(e)}")  # Log the error
+        return jsonify({"message": "Server error"}), 500
+
+
+@bp_user.route('/users/submitassesment', methods=['POST'])
+def submit_assesment_route():
+    try:
+        data = request.get_json()
+        response = HistoryAssesment(data)
+        print(f"\n\n response : {response} ")
+        return jsonify(response)
+    except Exception as e:
         return jsonify({"message": "Server error"}), 500

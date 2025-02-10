@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './sidebar';
 import DiagnosisFlow from './DiagnosisFlow';
 
@@ -10,27 +10,25 @@ const LandingPage = () => {
     const userId = localStorage.getItem('userId');
     if (userId) {
       // Example fetch from local storage
-console.log(localStorage);
+      console.log(localStorage);
 
       // Example fetch from an API
-     // Ensure userId is defined and passed correctly
-fetch(`${process.env.REACT_APP_API_URL}/users/checkdiagnosed/${userId}`)
-.then(response => response.json())
-.then(data => {
-  console.log(data);
-  setDiagnosisStatus(data.isDiagnosed);
-})
-.catch(error => console.error('Error fetching user data:', error));
- }
+      // Ensure userId is defined and passed correctly
+      fetch(`${process.env.REACT_APP_API_URL}/users/checkdiagnosed/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          setDiagnosisStatus(data.isDiagnosed);
+        })
+        .catch(error => console.error('Error fetching user data:', error));
+    }
   }, []);
-
-
-
 
   return (
     <div>
       <Sidebar />
-      <DiagnosisFlow isDiagnosed={diagnosisStatus} />
+      {/* Conditionally render DiagnosisFlow only when diagnosisStatus is false */}
+      {diagnosisStatus === false && <DiagnosisFlow isDiagnosed={diagnosisStatus} />}
     </div>
   );
 };
