@@ -37,6 +37,17 @@ def check_diagnosed(user_id):
         return {"isDiagnosed": user.get("isDiagnosed", False)}
     else:
         return {"message": "User not found"}, 404
+
+def check_assessed(user_id):
+    try:
+        # Convert string ID to ObjectId
+        user = db.history.find_one({"userId": user_id})
+        if user:
+            return {"isAssessed": True}
+        return {"isAssessed": False}
+    except Exception as e:
+        print(f"Error in check_assessed: {str(e)}")
+        return {"Assessed": False, "message": "Error checking assessment status"}
     
 def HistoryAssesment(data):
     user_id = data.get("userId")

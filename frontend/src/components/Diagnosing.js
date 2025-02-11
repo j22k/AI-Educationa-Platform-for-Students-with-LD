@@ -143,7 +143,6 @@ const ThreeViewer = () => {
     </div>
     {/* <FloatingCamera /> */}
   </div>
-
   );
 };
 

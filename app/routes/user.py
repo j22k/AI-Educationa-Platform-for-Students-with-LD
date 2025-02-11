@@ -6,7 +6,7 @@ import torch
 from PIL import Image
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
-from app.Helpers.userHelper import check_diagnosed,HistoryAssesment # Adjust import as per project structure
+from app.Helpers.userHelper import check_diagnosed,check_assessed,HistoryAssesment # Adjust import as per project structure
 
 bp_user = Blueprint('user', __name__)
 mp_face_mesh = mp.solutions.face_mesh
@@ -19,6 +19,17 @@ def check_diagnosed_route(user_id):
         return jsonify(response)
     except Exception as e:
         return jsonify({"message": "Server error"}), 500
+
+@bp_user.route('/users/checkassessed/<user_id>', methods=['GET'])
+def check_assessed_route(user_id):
+    try:
+        print(f"\n\n user_id : {user_id} ")
+        response = check_assessed(user_id)
+        print(f"\n\n response : {response} ")
+        return jsonify(response)
+    except Exception as e:
+        print(f"Error in check_assessed: {str(e)}")  # Debug logging
+        return jsonify({"message": "Server error", "isAssessed": False}), 500
 
 @bp_user.route('/users/facedetection', methods=['POST'])
 def face_detection_route():
@@ -80,3 +91,37 @@ def submit_assesment_route():
         return jsonify(response)
     except Exception as e:
         return jsonify({"message": "Server error"}), 500
+
+@bp_user.route('/users/dysgraphia_image', methods=['POST'])
+def dysgraphia_image():# Debug logging
+    try: # Debug logging
+        if 'image' not in request.files:
+            return jsonify({'status': 'error', 'message': 'No image file provided'}), 400
+        
+        image = request.files['image']
+        task = request.form.get('task')
+        text = request.form.get('text')
+        print(f"Task: {task}")  # Debug logging
+        print(f"Image: {image.filename}")  # Debug logging
+        print(f"text : {text}")  # Debug logging
+        
+        if not image or not task:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
+        # Read and process the image
+        npimg = np.frombuffer(image.read(), np.uint8)
+        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+        
+        # Save or process the image as needed
+        # Example: save to a specific directory
+        # cv2.imwrite(f'uploads/{task}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg', img)
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Image processed successfully',
+            'task': task
+        })
+
+    except Exception as e:
+        print(f"Error processing dysgraphia image: {str(e)}")  # Debug logging
+        return jsonify({'status': 'error', 'message': str(e)}), 500
