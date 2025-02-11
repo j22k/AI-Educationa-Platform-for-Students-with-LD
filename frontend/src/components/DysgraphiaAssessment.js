@@ -148,13 +148,13 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
               className="hidden" 
               onChange={handleFileUpload}
             />
-            <button 
+            {/* <button 
               onClick={() => fileInputRef.current.click()}
               className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
             >
               <Upload className="w-5 h-5" />
               <span>Upload Image</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

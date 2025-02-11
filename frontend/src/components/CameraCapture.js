@@ -11,6 +11,9 @@ const CameraCapture = ({
     const [cameraError, setCameraError] = useState(null);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
+    const storedUserId = localStorage.getItem('userId');
+   
+
     const closeCamera = () => {
         // Stop video stream if active
         if (videoRef.current && videoRef.current.srcObject) {
@@ -111,11 +114,11 @@ const submitImage = async () => {
         formData.append('image', blob, 'writing_sample.jpg');
         formData.append('task', task.title);
         formData.append('text', task.text);
+        formData.append('user_id', storedUserId);
 
         const serverResponse = await fetch(`${process.env.REACT_APP_API_URL}/users/dysgraphia_image`, {
             method: 'POST',
             body: formData,
-            credentials: 'include'
         });
 
         const result = await serverResponse.json();

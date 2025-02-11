@@ -4,9 +4,11 @@ from flask import Blueprint, request, jsonify
 import mediapipe as mp
 import torch
 from PIL import Image
+from datetime import datetime
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
-from app.Helpers.userHelper import check_diagnosed,check_assessed,HistoryAssesment # Adjust import as per project structure
+from app.Model.TextRecognition.EasyOCR import recognize_text_from_image  # Corrected import path
+from app.Helpers.userHelper import check_diagnosed,check_assessed,HistoryAssesment,add_dysgraphia_image_data # Adjust import as per project structure
 
 bp_user = Blueprint('user', __name__)
 mp_face_mesh = mp.solutions.face_mesh
@@ -101,25 +103,34 @@ def dysgraphia_image():# Debug logging
         image = request.files['image']
         task = request.form.get('task')
         text = request.form.get('text')
-        print(f"Task: {task}")  # Debug logging
-        print(f"Image: {image.filename}")  # Debug logging
-        print(f"text : {text}")  # Debug logging
+        user_id = request.form.get('user_id')
         
         if not image or not task:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        # Read and process the image
-        npimg = np.frombuffer(image.read(), np.uint8)
-        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
-        
-        # Save or process the image as needed
-        # Example: save to a specific directory
-        # cv2.imwrite(f'uploads/{task}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg', img)
+       # Call the separate function to perform OCR
+        recognized_text = recognize_text_from_image(image)
+        print(f"\n\nRecognized text: {recognized_text}\n\n")
+
+        # Create arrays for data storage
+        writing_data = {
+            "writingTasks": [
+                {
+                    "task": task,
+                    "originalText": text,
+                    "recognizedText": recognized_text,
+                    "timestamp": datetime.now().isoformat()
+                }
+            ]
+        }
+
+        response = add_dysgraphia_image_data(writing_data, user_id)
 
         return jsonify({
             'status': 'success',
             'message': 'Image processed successfully',
-            'task': task
+            'task': task,
+            'recognized_text': recognized_text
         })
 
     except Exception as e:
