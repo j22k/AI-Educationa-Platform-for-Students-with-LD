@@ -4,6 +4,7 @@ import AuthPage from './components/Auth';
 import Dashboard from './components/Dashboard';
 import Diagnosing from './components/Diagnosing';
 import AssessmentForm from './components/AssessmentForm';
+import Dyslexiadiagnosis from './components/Dyslexiadiagnosis';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/dash" element={<Dashboard />} />
         <Route path="/diagnosing" element={<AssessmentForm />} />
         <Route path='/LD_identification' element={<Diagnosing />}/>
+        <Route path='/dyslexia_diagnosis' element={<Dyslexiadiagnosis />}/>
       </Routes>
     </Router>
   );

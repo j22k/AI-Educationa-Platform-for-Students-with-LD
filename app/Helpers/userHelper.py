@@ -16,20 +16,18 @@ def user_exists(email):
 def signup(name, email, password):
     if user_exists(email):
         return {"status": False, "message": "User already exists"}
-   
-    hashed_password = generate_password_hash(password)
-    print(hashed_password)
-    db.users.insert_one({"name": name, "email": email, "password": hashed_password, "isDiagnosed": False})
+    db.users.insert_one({"name": name, "email": email, "password": password, "isDiagnosed": False})
     return {"status": True, "message": "User created successfully"}
-def login(username, password):
-    user = db.users.find_one({"username": username})
-    print(f"\n\n user : {user} ")
-    if user and check_password_hash(user["password"], password):
+
+def login(email, password):
+    user = db.users.find_one({"email": email})
+    if user and user["password"] == password:
         user_id = str(user["_id"])
-        name = user.get("name", "Unknown")  # Retrieve the name from the user object
+        name = user.get("name", "Unknown")
         return {"status": True, "message": "User logged in successfully", "userId": user_id, "name": name}
     else:
-        return {"status": False, "message": "Invalid username or password"}
+        return {"status": False, "message": "Invalid email or password"}
+
     
 def check_diagnosed(user_id):
     user = db.users.find_one({"_id": ObjectId(user_id)})
@@ -67,18 +65,19 @@ def HistoryAssesment(data):
 def add_dysgraphia_image_data(data, userID):
     try:
         # Check if document exists for this user
-        doc = db.dysgraphia_diagnosis.find_one({"_id": ObjectId(userID)})
+        doc = db.dysgraphia_diagnosis.find_one({"userID": userID})
         
         if not doc:
             # Create new document with initial writing task
             db.dysgraphia_diagnosis.insert_one({
-                "_id": ObjectId(userID),
+                "_id": ObjectId(),  # Generate a new ObjectId for the document
+                "userID": userID,
                 "writingTasks": data["writingTasks"]
             })
         else:
             # Add new tasks to existing array
             db.dysgraphia_diagnosis.update_one(
-                {"_id": ObjectId(userID)},
+                {"userID": userID},
                 {"$push": {"writingTasks": {"$each": data["writingTasks"]}}}
             )
 

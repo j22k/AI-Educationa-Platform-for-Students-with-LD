@@ -30,7 +30,8 @@ const AuthPage = () => {
 
     try {
       const endpoint = isLogin ? '/login' : '/signup';
-
+      console.log('formData:', formData);
+      
       const response = await fetch(`${process.env.REACT_APP_API_URL}${endpoint}`, {
         method: 'POST',
         headers: {

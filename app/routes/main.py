@@ -7,9 +7,11 @@ bp = Blueprint('main', __name__)
 def login_route():
     try:
         data = request.get_json()
-        username = data.get('username')
+        print(f"\n\n data : {data} \n\n")
+        email = data.get('email')
         password = data.get('password')
-        response = login(username, password)
+        print(f"\n\n email : {email} \n\n")
+        response = login(email, password)
         return jsonify(response)
     except Exception as e:
         print(f"Error in login: {str(e)}")  # Log the error

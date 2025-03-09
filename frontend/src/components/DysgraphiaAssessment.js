@@ -1,6 +1,51 @@
-import React, { useState, useRef } from 'react';
-import { Camera, ArrowRight, Info, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import CameraCapture from './CameraCapture';
+
+const useAutoSpeech = (texts, delayBetween = 3000) => {
+  const [selectedVoice, setSelectedVoice] = useState(null);
+  
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      const englishVoices = availableVoices.filter(voice => voice.lang.startsWith('en'));
+      // Select the first English voice as default
+      if (englishVoices.length > 0) {
+        setSelectedVoice(englishVoices[0]);
+      }
+    };
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedVoice && texts.length > 0) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      // Speak each text with delay using the same voice
+      texts.forEach((text, index) => {
+        setTimeout(() => {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.voice = selectedVoice;
+          utterance.rate = 0.9;
+          utterance.pitch = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }, index * delayBetween);
+      });
+    }
+
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, [texts, selectedVoice, delayBetween]);
+};
 
 const dysgraphiaTasks = [
   {
@@ -45,36 +90,42 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
   const [capturedImages, setCapturedImages] = useState([]);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const fileInputRef = useRef(null);
+  const navigate = useNavigate(); // Initialize useNavigate
+
+  const currentTask = dysgraphiaTasks[currentTaskIndex];
+  const taskText = `${currentTask.question} ${currentTask.text}`;
+  const instructionText = "Write the task on paper and capture using camera ";
+
+  // Setup auto-speech for current task
+  useAutoSpeech([
+    `Task ${currentTaskIndex + 1}: ${currentTask.title}`,
+    taskText,
+    currentTask.purpose,
+    instructionText
+  ]);
 
   const handleImageCapture = () => {
     setIsCameraActive(true);
   };
 
   const handleCameraCapture = (imageData) => {
-    // Add captured image to the list
     setCapturedImages(prev => [...prev, imageData]);
-    
-    // Trigger parent component's image capture callback if needed
     if (onImageCapture) {
       onImageCapture(imageData);
     }
   };
 
   const handleNext = () => {
-    // First, close the camera
     setIsCameraActive(false);
-
-    // Then proceed to next task
     if (currentTaskIndex < dysgraphiaTasks.length - 1) {
       const nextIndex = currentTaskIndex + 1;
       setCurrentTaskIndex(nextIndex);
-      
-      // Update subtitle for next task
       const nextTask = dysgraphiaTasks[nextIndex];
-      onSubtitleChange(`Preparing for next task: ${nextTask.title}`);
+      onSubtitleChange?.(`Preparing for next task: ${nextTask.title}`);
     } else {
-      onSubtitleChange("Assessment complete! Review your writing samples.");
+      onSubtitleChange?.("Assessment complete! Review your writing samples.");
       alert("Assessment complete!");
+      navigate('/dyslexia_diagnosis');
     }
   };
 
@@ -87,11 +138,7 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
           image: reader.result,
           task: dysgraphiaTasks[currentTaskIndex].title
         };
-        
-        // Add uploaded image to the list
         setCapturedImages(prev => [...prev, uploadedImage]);
-        
-        // Trigger parent component's image capture callback if needed
         if (onImageCapture) {
           onImageCapture(uploadedImage);
         }
@@ -100,11 +147,8 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
     }
   };
 
-  const currentTask = dysgraphiaTasks[currentTaskIndex];
-
   return (
     <div className="w-full h-full flex flex-col space-y-4">
-      {/* Camera Capture Overlay */}
       {isCameraActive && (
         <CameraCapture 
           task={currentTask}
@@ -115,23 +159,27 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
       )}
 
       <div className="bg-blue-100 rounded-lg p-4">
-        <h2 className="text-xl font-semibold text-blue-800 mb-2">
-          {currentTask.title}
-        </h2>
+        <div className="mb-2">
+          <h2 className="text-xl font-semibold text-blue-800">
+            {currentTask.title}
+          </h2>
+        </div>
         <div className="bg-white p-3 rounded-md shadow-sm">
           <p className="text-gray-700">{currentTask.question}</p>
           <p className="font-bold text-blue-600 mt-1">{currentTask.text}</p>
         </div>
-        <p className="text-sm text-gray-600 italic mt-2 flex items-center">
-          <Info className="w-4 h-4 mr-2" />
-          {currentTask.purpose}
-        </p>
+        <div className="mt-2">
+          <p className="text-sm text-gray-600 italic flex items-center">
+            <Info className="w-4 h-4 mr-2" />
+            {currentTask.purpose}
+          </p>
+        </div>
       </div>
 
       <div className="flex-grow flex flex-col justify-center">
         <div className="text-center p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <p className="text-gray-600 mb-4">
-            Write the task on paper and capture using camera or upload an image
+            {instructionText}
           </p>
           <div className="flex justify-center space-x-4">
             <button 
@@ -148,13 +196,6 @@ const DysgraphiaAssessment = ({ onSubtitleChange, onImageCapture }) => {
               className="hidden" 
               onChange={handleFileUpload}
             />
-            {/* <button 
-              onClick={() => fileInputRef.current.click()}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
-            >
-              <Upload className="w-5 h-5" />
-              <span>Upload Image</span>
-            </button> */}
           </div>
         </div>
       </div>
