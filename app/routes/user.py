@@ -24,7 +24,7 @@ from werkzeug.utils import secure_filename
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
 from app.Model.TextRecognition.EasyOCR import recognize_text_from_image  
-from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data  
+from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data  
 
 # Initialize Flask Blueprint
 bp_user = Blueprint('user', __name__)
@@ -213,6 +213,14 @@ def process_audio():
     # Log request content type
     print(f"Request Content-Type: {request.content_type}")
 
+    audio_file = request.files['audio']
+    question = request.form.get('question', 'Unknown question')
+    user_id = request.form.get('userID', 'Unknown user')
+
+    print(f"✅ Received filename: {audio_file.filename}")
+    print(f"✅ Question: {question}")
+    print(f"✅ User ID: {user_id}")
+
     if 'audio' not in request.files:
         print("❌ No 'audio' file found in request!")
         return jsonify({'error': 'No audio file provided'}), 400
@@ -246,6 +254,23 @@ def process_audio():
 
         # Transcribe the audio
         transcription = transcribe_audio(file_path)
+
+        emotions = emotion_history[-10:]
+
+
+        audio_data = {
+            "audioTask": [
+                {
+                    "originalText": question,
+                    "recognizedText": transcription,
+                    "timestamp": datetime.now().isoformat(),
+                    "emotions": emotions
+                }
+            ]
+        }
+        print(f"\n\n\n Audio Data: {audio_data}")
+    
+        response = add_dylexia_data(audio_data, user_id)
 
         return jsonify({
             'success': True,

@@ -62,6 +62,7 @@ def HistoryAssesment(data):
     # If no existing assessment, insert new one
     db.history.insert_one({"userId": user_id, "assessmentData": data["assessmentData"]})
     return {"status": True, "message": "Assessment data saved successfully"}
+
 def add_dysgraphia_image_data(data, userID):
     try:
         # Check if document exists for this user
@@ -85,6 +86,34 @@ def add_dysgraphia_image_data(data, userID):
             "status": True, 
             "message": "Writing data added successfully",
             "taskCount": len(data["writingTasks"])
+        }
+    except Exception as e:
+        print(f"Error in add_dysgraphia_image_data: {str(e)}")
+        return {"status": False, "message": f"Error adding writing data: {str(e)}"}
+    
+def add_dylexia_data(data, userID):
+    try:
+        # Check if document exists for this user
+        doc = db.dyslexia_diagnosis.find_one({"userID": userID})
+        
+        if not doc:
+            # Create new document with initial writing task
+            db.dyslexia_diagnosis.insert_one({
+                "_id": ObjectId(),  # Generate a new ObjectId for the document
+                "userID": userID,
+                "audioTask": data["audioTask"]
+            })
+        else:
+            # Add new tasks to existing array
+            db.dyslexia_diagnosis.update_one(
+                {"userID": userID},
+                {"$push": {"audioTask": {"$each": data["audioTask"]}}}
+            )
+
+        return {
+            "status": True, 
+            "message": "Writing data added successfully",
+            "taskCount": len(data["audioTask"])
         }
     except Exception as e:
         print(f"Error in add_dysgraphia_image_data: {str(e)}")
