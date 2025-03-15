@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './sidebar';
 import DiagnosisFlow from './DiagnosisFlow';
+import AssesmentResult from './AssesmentResult';
 
 const LandingPage = () => {
-  const [diagnosisStatus, setDiagnosisStatus] = useState();
+  const [diagnosisStatus, setDiagnosisStatus] = useState(null); // Ensure it starts as null to handle loading state
 
   useEffect(() => {
-    // Fetch user data from local storage or an API
     const userId = localStorage.getItem('userId');
     if (userId) {
-      // Example fetch from local storage
-      console.log(localStorage);
-
-      // Example fetch from an API
-      // Ensure userId is defined and passed correctly
       fetch(`${process.env.REACT_APP_API_URL}/users/checkdiagnosed/${userId}`)
         .then(response => response.json())
         .then(data => {
@@ -27,8 +22,13 @@ const LandingPage = () => {
   return (
     <div>
       <Sidebar />
-      {/* Conditionally render DiagnosisFlow only when diagnosisStatus is false */}
-      {diagnosisStatus === false && <DiagnosisFlow isDiagnosed={diagnosisStatus} />}
+      {diagnosisStatus === null ? (
+        <p>Loading...</p> // Show loading message while waiting for the API response
+      ) : diagnosisStatus ? (
+        <AssesmentResult />
+      ) : (
+        <DiagnosisFlow isDiagnosed={diagnosisStatus} />
+      )}
     </div>
   );
 };

@@ -6,7 +6,7 @@ import base64
 import tempfile
 import speech_recognition as sr
 import mediapipe as mp
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, json, request, jsonify, current_app
 from PIL import Image
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -18,13 +18,15 @@ import speech_recognition as sr
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from json import JSONDecodeError
 
 
 # Import project-specific modules
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
 from app.Model.TextRecognition.EasyOCR import recognize_text_from_image  
-from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data  
+from app.Model.LD_Identification import identify
+from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data,get_user_assessment_data,save_model_response  
 
 # Initialize Flask Blueprint
 bp_user = Blueprint('user', __name__)
@@ -282,3 +284,78 @@ def process_audio():
 
     print("❌ Invalid file format")
     return jsonify({'error': 'Invalid file format'}), 400
+
+
+@bp_user.route('/users/ld_identification', methods=['POST'])
+def ld_identification():
+    try:
+        data = request.get_json()
+        if not data:
+            print("❌ Invalid JSON in request body")
+            return jsonify({'error': 'Invalid JSON in request body'}), 400
+        print(f"📥 Incoming JSON: {json.dumps(data, indent=2)}")
+    except Exception as e:
+        print(f"❌ JSON Parse Error: {e}")
+        return jsonify({'error': 'Failed to parse request JSON'}), 400
+
+    user_id = data.get('userID')
+    if not user_id:
+        print("❌ No user ID provided!")
+        return jsonify({'error': 'No user ID provided'}), 400
+
+    assessment_data = get_user_assessment_data(user_id)
+    if not assessment_data:
+        print("❌ No assessment data found for user")
+        return jsonify({'error': 'No assessment data found'}), 404
+
+    print(f"📊 Assessment Data: {assessment_data}")
+    try:
+        assessment_json_str = json.dumps(assessment_data)
+    except TypeError as e:
+        print(f"❌ JSON Serialize Error: {e}")
+        return jsonify({'error': 'Assessment data contains non-serializable values'}), 500
+
+    # Call AI model for learning disability analysis
+    try:
+        model_response = identify(assessment_json_str)
+        
+        print("\n=== Model Response Debug ===")
+        print(f"🔍 Response Type: {type(model_response)}")
+        print(f"📝 Raw Response: {repr(model_response)[:200]}...")  # Show first 200 chars
+        
+        # Transform JSON into a structured MongoDB document
+        Data = {
+            "userID": user_id,
+            "name": model_response["studentProfile"]["name"],
+            "age": model_response["studentProfile"]["age"],
+            "relationship": model_response["studentProfile"]["relationship"],
+            "preferredLearningStyle": model_response["studentProfile"]["preferredLearningStyle"],
+            "strengths": model_response["studentProfile"]["strengths"],
+            "struggles": model_response["studentProfile"]["struggles"],
+            "previousDiagnosis": model_response["studentProfile"]["previousDiagnosis"],
+            "mainConcerns": model_response["studentProfile"]["mainConcerns"],
+            "previousSupport": model_response["studentProfile"]["previousSupport"],
+            "learningDisabilities": [
+                {
+                    "type": key,
+                    "confidenceScore": model_response["learningDisabilities"][key]["confidenceScore"],
+                    "indicators": model_response["learningDisabilities"][key]["indicators"]
+                } for key in model_response["learningDisabilities"]
+            ],
+            "emotionAnalysis": {
+                "dominantEmotions": model_response["emotionAnalysis"]["dominantEmotions"],
+                "emotionOccurrences": model_response["emotionAnalysis"]["emotionOccurrences"],
+                "graphData": model_response["emotionAnalysis"]["graphData"]
+            }
+        }
+      
+        # Save the model response to MongoDB
+        response = save_model_response(user_id, Data)
+        return jsonify(response)
+    
+    except JSONDecodeError as e:
+        print(f"❌ JSON Parsing Error from Model Response: {e}")
+        return jsonify({'error': 'Invalid JSON response from AI model'}), 500
+    except Exception as e:
+        print(f"❌ Unexpected Error: {e}")
+        return jsonify({'error': 'An error occurred while processing the request'}), 500

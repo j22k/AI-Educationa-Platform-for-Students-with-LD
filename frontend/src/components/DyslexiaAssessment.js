@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Mic, StopCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 
 const questions = [
   "I like to play outside with my friends.",
@@ -10,6 +11,7 @@ const questions = [
 ];
 
 const AudioRecordingComponent = () => {
+  const navigate = useNavigate(); // Initialize useNavigate hook
   const [isRecording, setIsRecording] = useState(false);
   const [status, setStatus] = useState("Ready to begin");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -49,6 +51,18 @@ const AudioRecordingComponent = () => {
       }
     };
   }, []);
+
+  // Effect to navigate to loading page when assessment is completed
+  useEffect(() => {
+    if (isCompleted) {
+      // Wait a moment to show the completion message before navigating
+      const timer = setTimeout(() => {
+        navigate('/loading-assessment'); // Navigate to the loading assessment page
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isCompleted, navigate]);
 
   const startRecording = async () => {
     setStatus("Recording... Speak clearly.");
@@ -200,7 +214,7 @@ const AudioRecordingComponent = () => {
         setStatus("Next question ready.");
       } else {
         setIsCompleted(true);
-        setStatus("All questions completed!");
+        setStatus("All questions completed! Redirecting to assessment...");
       }
     } catch (error) {
       console.error("Error sending audio:", error);
@@ -225,9 +239,23 @@ const AudioRecordingComponent = () => {
               </button>
             </div>
             <p className="text-center text-sm italic mt-4">{status}</p>
+            <div className="mt-4">
+              <p className="text-gray-600 text-sm">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </p>
+              <div className="w-full bg-gray-200 h-2 rounded-full mt-1">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${((currentQuestionIndex) / (questions.length - 1)) * 100}%` }}
+                ></div>
+              </div>
+            </div>
           </>
         ) : (
-          <p className="text-green-600 font-bold">✅ Assessment Complete!</p>
+          <div className="text-center">
+            <p className="text-green-600 font-bold">✅ Assessment Complete!</p>
+            <p className="text-gray-600 mt-2">Redirecting to analysis page...</p>
+          </div>
         )}
       </div>
     </div>

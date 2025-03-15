@@ -1,3 +1,4 @@
+from flask import json
 from pymongo import MongoClient
 from app.Config.config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -118,3 +119,68 @@ def add_dylexia_data(data, userID):
     except Exception as e:
         print(f"Error in add_dysgraphia_image_data: {str(e)}")
         return {"status": False, "message": f"Error adding writing data: {str(e)}"}
+    
+def get_user_assessment_data(userID):
+    try:
+        # Get data from all collections
+        history_data = db.history.find_one({"userId": userID})
+        dyslexia_data = db.dyslexia_diagnosis.find_one({"userID": userID})
+        dysgraphia_data = db.dysgraphia_diagnosis.find_one({"userID": userID})
+
+        # Format the response
+        response = {
+            "status": True,
+            "data": {
+                "history": history_data["assessmentData"] if history_data else None,
+                "dyslexia": {
+                    "audioTask": dyslexia_data["audioTask"] if dyslexia_data else []
+                } if dyslexia_data else None,
+                "dysgraphia": {
+                    "writingTasks": dysgraphia_data["writingTasks"] if dysgraphia_data else []
+                } if dysgraphia_data else None
+            }
+        }
+
+        # Check if any data exists
+        if not any([history_data, dyslexia_data, dysgraphia_data]):
+            return {
+                "status": False,
+                "message": "No assessment data found for this user"
+            }
+
+        return response
+
+    except Exception as e:
+        print(f"Error in get_user_assessment_data: {str(e)}")
+        return {
+            "status": False,
+            "message": f"Error retrieving assessment data: {str(e)}"
+        }
+
+def save_model_response(user_id, data):
+    try:
+        # Validate user_id format
+        if not ObjectId.is_valid(user_id):
+            return {"status": False, "message": "Invalid user ID format"}
+
+        # Check if user exists
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return {"status": False, "message": "User not found"}
+
+        # Insert the structured data into the 'assessment_results' collection.
+        insert_result = db.assessment_results_collection.insert_one(data)
+        print(f"✅ Inserted document ID: {insert_result.inserted_id}")
+
+        # Optionally, update the user record to reflect that a diagnosis has been made.
+        db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"isDiagnosed": True}}
+        )
+
+        return {"status": True, "message": "Model response saved successfully", "inserted_id": str(insert_result.inserted_id)}
+
+
+    except Exception as e:
+        print(f"Error in save_model_response: {str(e)}")
+        return {"status": False, "message": f"Error saving model response: {str(e)}"}
