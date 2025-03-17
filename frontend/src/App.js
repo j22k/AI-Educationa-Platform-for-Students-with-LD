@@ -6,6 +6,7 @@ import Diagnosing from './components/Diagnosing';
 import AssessmentForm from './components/AssessmentForm';
 import Dyslexiadiagnosis from './components/Dyslexiadiagnosis';
 import LoadingAssessmentPage from './components/Loadingassesment';
+import DyslexiaLearning from './components/DyslexiaLearning';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path='/LD_identification' element={<Diagnosing />}/>
         <Route path='/dyslexia_diagnosis' element={<Dyslexiadiagnosis />}/>
         <Route path='/loading-assessment' element={<LoadingAssessmentPage />} />
+        <Route path='/dyslexia-learning' element={<DyslexiaLearning />} />
       </Routes>
     </Router>
   );

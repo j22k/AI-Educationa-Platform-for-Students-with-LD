@@ -19,7 +19,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from json import JSONDecodeError
-
+from collections import Counter
 
 # Import project-specific modules
 from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
@@ -27,9 +27,23 @@ from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, g
 from app.Model.TextRecognition.EasyOCR import recognize_text_from_image  
 from app.Model.LD_Identification import identify
 from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data,get_user_assessment_data,save_model_response,get_assessment_result  
+from app.Model.RL.rl_agent import EmotionRLAgent
+
 
 # Initialize Flask Blueprint
 bp_user = Blueprint('user', __name__)
+
+# Define possible adaptive actions
+ACTIONS = [
+    "Repeat lesson", 
+    "Offer additional hint", 
+    "Slow down pace", 
+    "Provide encouragement", 
+    "Proceed normally"
+]
+
+# Instantiate the RL agent (using Q-learning with an epsilon-greedy policy)
+emotion_rl_agent = EmotionRLAgent(actions=ACTIONS)
 
 # Configure Upload Folder
 UPLOAD_FOLDER = 'static/uploads/audio'
@@ -380,3 +394,48 @@ def assessment_result():
     except Exception as e:
         print(f"❌ Error processing assessment request: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+    
+
+@bp_user.route('/users/rl_action', methods=['GET'])
+def rl_action():
+    """
+    This route computes the most frequent emotion from the last 10 entries in emotion_history,
+    uses that as the current state, and then returns an adaptive action selected by the RL agent.
+    
+    Expected Response:
+    {
+      "state": "Anger",
+      "action": "Slow down pace",
+      "last_ten_emotions": ["Neutral", "Anger", ...],
+      "emotion_counts": {"Neutral": 4, "Anger": 5, "Happiness": 1}
+    }
+    """
+    try:
+        # Ensure we have at least 10 emotion entries
+        if len(emotion_history) < 10:
+            return jsonify({
+                "error": "Not enough emotion data. At least 10 emotion entries required.",
+                "currentCount": len(emotion_history)
+            }), 400
+        
+        # Get the last 10 emotion detections
+        last_ten = emotion_history[-10:]
+        # Use Counter to compute frequency and determine the most common emotion (the "state")
+        emotion_counter = Counter(last_ten)
+        current_state, count = emotion_counter.most_common(1)[0]
+        
+        # Use the RL agent to choose an action based on the current state (emotion)
+        action = emotion_rl_agent.choose_action(current_state)
+        
+        # (Optional) You could also update the Q-table here if you had reward feedback.
+        # e.g., emotion_rl_agent.update(current_state, action, reward, next_state)
+        
+        print(f"🧠 Current State: {current_state}, Action: {action}")
+        return jsonify({
+            "state": current_state,
+            "action": action,
+            "last_ten_emotions": last_ten,
+            "emotion_counts": dict(emotion_counter)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

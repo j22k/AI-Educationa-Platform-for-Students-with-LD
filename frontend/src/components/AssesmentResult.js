@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import StartLearningButton from './StartlearningButton';
 
@@ -6,6 +7,11 @@ const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const handleStartLearning = () => {
+    navigate('/dyslexia-learning');
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -179,7 +185,7 @@ const Dashboard = () => {
             </div>
             <div className="mt-4 md:mt-0">
               <StartLearningButton 
-               
+                onClick={handleStartLearning}
               />
             </div>
           </div>
