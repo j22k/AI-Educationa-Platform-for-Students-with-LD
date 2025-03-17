@@ -4,16 +4,14 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import FloatingCamera from './FloatingCamera';
 import DyslexiaAssessment from './DyslexiaAssessment';
 
-
 const ThreeScene = ({ containerId, modelPath }) => {
   const mountRef = useRef(null);
-  const isDragging = useRef(false);
-  const previousMousePosition = useRef({ x: 0, y: 0 });
-  const cameraPosition = useRef({ x: 0, y: 0, z: 5 });
- 
+  const mixerRef = useRef(null); // Reference to store the AnimationMixer
+
   useEffect(() => {
     if (!mountRef.current) return;
 
+    // Set up Scene, Camera, and Renderer
     const container = mountRef.current;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf0f0f0);
@@ -24,32 +22,51 @@ const ThreeScene = ({ containerId, modelPath }) => {
       0.1,
       1000
     );
-    camera.position.set(cameraPosition.current.x, cameraPosition.current.y, cameraPosition.current.z);
+    camera.position.set(0.5, 0.5, 2);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    mountRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
 
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(2, 2, 5);
     scene.add(directionalLight);
 
-    // Load 3D model using GLTFLoader
+    // Clock for updating animations
+    const clock = new THREE.Clock();
+
+    // Load the 3D model using GLTFLoader
     const loader = new GLTFLoader();
     loader.load(modelPath, (gltf) => {
       const model = gltf.scene;
+
+      // Compute bounding box to center the model
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.sub(center);
+
       scene.add(model);
+
+      // Set up animation mixer if there are animations
+      if (gltf.animations && gltf.animations.length > 0) {
+        const mixer = new THREE.AnimationMixer(model);
+        // Play the first animation clip (you can choose others as needed)
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+        mixerRef.current = mixer;
+      }
     });
+
+    // Mouse Interaction for camera rotation (if needed)
+    const isDragging = { current: false };
+    const previousMousePosition = { current: { x: 0, y: 0 } };
 
     const handleMouseDown = (e) => {
       isDragging.current = true;
-      previousMousePosition.current = {
-        x: e.clientX,
-        y: e.clientY,
-      };
+      previousMousePosition.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseUp = () => {
@@ -66,83 +83,59 @@ const ThreeScene = ({ containerId, modelPath }) => {
 
       const rotationSpeed = 0.005;
 
-      camera.position.x = cameraPosition.current.x * Math.cos(deltaMove.x * rotationSpeed) 
-                         - cameraPosition.current.z * Math.sin(deltaMove.x * rotationSpeed);
-      camera.position.z = cameraPosition.current.x * Math.sin(deltaMove.x * rotationSpeed) 
-                         + cameraPosition.current.z * Math.cos(deltaMove.x * rotationSpeed);
+      camera.position.x = 0.5 * Math.cos(deltaMove.x * rotationSpeed)
+                         - 2 * Math.sin(deltaMove.x * rotationSpeed);
+      camera.position.z = 0.5 * Math.sin(deltaMove.x * rotationSpeed)
+                         + 2 * Math.cos(deltaMove.x * rotationSpeed);
 
-      camera.position.y += deltaMove.y * rotationSpeed;
       camera.lookAt(scene.position);
-
-      previousMousePosition.current = {
-        x: e.clientX,
-        y: e.clientY,
-      };
+      previousMousePosition.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handleWheel = (e) => {
-      const zoomSpeed = 0.1;
-      camera.position.z = Math.max(2, Math.min(10, camera.position.z + (e.deltaY * zoomSpeed * 0.01)));
-    };
+    container.addEventListener('mousedown', handleMouseDown);
+    container.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mousemove', handleMouseMove);
 
-    renderer.domElement.addEventListener('mousedown', handleMouseDown);
-    renderer.domElement.addEventListener('mouseup', handleMouseUp);
-    renderer.domElement.addEventListener('mousemove', handleMouseMove);
-    renderer.domElement.addEventListener('wheel', handleWheel);
-
+    // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (mixerRef.current) {
+        mixerRef.current.update(delta);
+      }
       renderer.render(scene, camera);
     };
-
     animate();
 
-    const handleResize = () => {
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-
+    // Cleanup on unmount
     return () => {
-      window.removeEventListener('resize', handleResize);
-      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
-      renderer.domElement.removeEventListener('mouseup', handleMouseUp);
-      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
-      renderer.domElement.removeEventListener('wheel', handleWheel);
       container.removeChild(renderer.domElement);
+      container.removeEventListener('mousedown', handleMouseDown);
+      container.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [containerId, modelPath]);
+  }, [modelPath]);
 
-  return <div ref={mountRef} className="w-full h-full" />;
+  return <div id={containerId} ref={mountRef} style={{ width: '100%', height: '100vh' }} />;
 };
 
 const ThreeViewer = () => {
   const [subtitle, setSubtitle] = useState('Ready to view 3D models!');
-  const modelPath = 'models/face.glb'; // Adjust path to your `.glb` model file
+  const modelPath = 'models/646d9dcdc8a5f5bddbfac913.glb'; // Adjust path to your `.glb` model file
 
   return (
     <div className="flex flex-col w-full h-screen p-4 gap-4">
-    <div className="flex gap-4 h-3/4">
-      <div className="w-1/2 bg-white rounded-lg shadow-md p-4 overflow-auto">
-       <DyslexiaAssessment />
-      </div>
+      <div className="flex gap-4 h-3/4">
+        <div className="w-1/2 bg-white rounded-lg shadow-md p-4 overflow-auto">
+          <DyslexiaAssessment />
+        </div>
 
-      <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
-        <ThreeScene containerId="viewer2" modelPath={modelPath} />
+        <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
+          <ThreeScene containerId="viewer2" modelPath={modelPath} />
+        </div>
       </div>
+      <FloatingCamera />
     </div>
-
-    <div className="w-full bg-white rounded-lg shadow-md p-4">
-      <h3 className="font-semibold mb-2">Assessment Guidance</h3>
-      <div className="text-sm text-gray-600">
-        {subtitle}
-      </div>
-    </div>
-    <FloatingCamera />
-  </div>
   );
 };
 

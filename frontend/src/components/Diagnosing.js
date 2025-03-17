@@ -121,7 +121,7 @@ const ThreeScene = ({ containerId, modelPath }) => {
 
 const ThreeViewer = () => {
   const [subtitle, setSubtitle] = useState('Ready to view 3D models!');
-  const modelPath = 'models/face.glb'; // Adjust path to your `.glb` model file
+  const modelPath = 'models/'; // Adjust path to your `.glb` model file
 
   return (
     <div className="flex flex-col w-full h-screen p-4 gap-4">

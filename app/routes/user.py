@@ -26,7 +26,7 @@ from app.Model.EmotionDetection.model import pth_backbone_model, pth_LSTM_model
 from app.Model.EmotionDetection.utlis import pth_processing, norm_coordinates, get_box
 from app.Model.TextRecognition.EasyOCR import recognize_text_from_image  
 from app.Model.LD_Identification import identify
-from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data,get_user_assessment_data,save_model_response  
+from app.Helpers.userHelper import check_diagnosed, check_assessed, HistoryAssesment, add_dysgraphia_image_data,add_dylexia_data,get_user_assessment_data,save_model_response,get_assessment_result  
 
 # Initialize Flask Blueprint
 bp_user = Blueprint('user', __name__)
@@ -359,3 +359,24 @@ def ld_identification():
     except Exception as e:
         print(f"❌ Unexpected Error: {e}")
         return jsonify({'error': 'An error occurred while processing the request'}), 500
+    
+@bp_user.route('/users/assessmentresult', methods=['POST'])
+def assessment_result():
+    try:
+        data = request.get_json()
+        user_id = data.get('userID')
+        
+        if not user_id:
+            return jsonify({"error": "User ID not provided"}), 400
+            
+        response = get_assessment_result(user_id)
+        
+        if not response["status"]:
+            return jsonify({"error": response["message"]}), 404
+        
+        print(response)
+        return jsonify(response["data"])
+        
+    except Exception as e:
+        print(f"❌ Error processing assessment request: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500

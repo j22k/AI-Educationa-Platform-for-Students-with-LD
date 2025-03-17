@@ -184,3 +184,30 @@ def save_model_response(user_id, data):
     except Exception as e:
         print(f"Error in save_model_response: {str(e)}")
         return {"status": False, "message": f"Error saving model response: {str(e)}"}
+    
+def get_assessment_result(user_id):
+    try:
+        # Validate user_id format
+        if not ObjectId.is_valid(user_id):
+            return {"status": False, "message": "Invalid user ID format"}
+
+        # Find the assessment result for the user
+        result = db.assessment_results_collection.find_one({"userID": user_id})
+        
+        if not result:
+            return {"status": False, "message": "No assessment results found"}
+
+        # Remove MongoDB's _id field before returning
+        result.pop('_id', None)
+        
+        return {
+            "status": True,
+            "data": result
+        }
+
+    except Exception as e:
+        print(f"❌ Error in get_assessment_result: {str(e)}")
+        return {
+            "status": False,
+            "message": f"Error retrieving assessment result: {str(e)}"
+        }
