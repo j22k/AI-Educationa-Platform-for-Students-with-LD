@@ -96,6 +96,15 @@ const ThreeScene = ({ containerId, modelPath }) => {
     container.addEventListener('mouseup', handleMouseUp);
     container.addEventListener('mousemove', handleMouseMove);
 
+    // Handle window resize
+    const handleResize = () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
@@ -113,28 +122,86 @@ const ThreeScene = ({ containerId, modelPath }) => {
       container.removeEventListener('mousedown', handleMouseDown);
       container.removeEventListener('mouseup', handleMouseUp);
       container.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', handleResize);
     };
   }, [modelPath]);
 
-  return <div id={containerId} ref={mountRef} style={{ width: '100%', height: '100vh' }} />;
+  return (
+    <div id={containerId} ref={mountRef} style={{ width: '100%', height: '100%' }} />
+  );
 };
 
 const ThreeViewer = () => {
-  const [subtitle, setSubtitle] = useState('Ready to view 3D models!');
-  const modelPath = 'models/646d9dcdc8a5f5bddbfac913.glb'; // Adjust path to your `.glb` model file
+  const [modelPath, setModelPath] = useState('models/646d9dcdc8a5f5bddbfac913.glb');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleModelChange = (newPath) => {
+    setIsLoading(true);
+    setModelPath(newPath);
+    // Reset loading after a short delay to simulate model loading
+    setTimeout(() => setIsLoading(false), 1000);
+  };
 
   return (
-    <div className="flex flex-col w-full h-screen p-4 gap-4">
-      <div className="flex gap-4 h-3/4">
-        <div className="w-1/2 bg-white rounded-lg shadow-md p-4 overflow-auto">
-          <DyslexiaAssessment />
+    <div className="flex flex-col w-full h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-blue-600 text-white p-4 shadow-md">
+        <h1 className="text-2xl font-bold">3D Assessment Viewer</h1>
+        <p className="text-sm opacity-80">Interactive 3D model visualization and assessment tool</p>
+      </header>
+      
+      {/* Main Content */}
+      <div className="flex flex-col md:flex-row flex-1 p-4 gap-4 overflow-hidden">
+        {/* Left Panel - Assessment */}
+        <div className="w-full md:w-1/2 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-blue-50 p-3 border-b border-blue-100">
+            <h2 className="text-lg font-semibold text-blue-800">Dyslexia Assessment</h2>
+          </div>
+          <div className="flex-1 p-4 overflow-auto">
+            <DyslexiaAssessment />
+          </div>
         </div>
-
-        <div className="w-1/2 bg-white rounded-lg shadow-md p-4">
-          <ThreeScene containerId="viewer2" modelPath={modelPath} />
+        
+        {/* Right Panel - 3D Viewer */}
+        <div className="w-full md:w-1/2 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-blue-50 p-3 border-b border-blue-100 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-blue-800">3D Model Viewer</h2>
+            {isLoading && (
+              <span className="text-sm text-blue-600">Loading model...</span>
+            )}
+          </div>
+          <div className="flex-1 relative">
+            {/* Overlay loading indicator */}
+            {isLoading && (
+              <div className="absolute inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center z-10">
+                <div className="loading-spinner"></div>
+              </div>
+            )}
+            <ThreeScene containerId="model-viewer" modelPath={modelPath} />
+          </div>
+          <div className="p-3 bg-gray-50 border-t border-gray-200">
+            <div className="flex gap-2">
+              <button 
+                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                onClick={() => handleModelChange('models/646d9dcdc8a5f5bddbfac913.glb')}
+              >
+                Model 1
+              </button>
+              <button 
+                className="px-3 py-1 bg-gray-200 text-gray-800 text-sm rounded hover:bg-gray-300"
+                onClick={() => handleModelChange('models/alternative-model.glb')}
+              >
+                Model 2
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <FloatingCamera />
+      
+      {/* Floating Camera Component */}
+      <div className="absolute bottom-4 right-4">
+        <FloatingCamera />
+      </div>
     </div>
   );
 };

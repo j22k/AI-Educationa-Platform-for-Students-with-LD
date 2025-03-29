@@ -8,6 +8,8 @@ const LandingPage = () => {
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
+    console.log('User ID:', userId);
+    
     if (userId) {
       fetch(`${process.env.REACT_APP_API_URL}/users/checkdiagnosed/${userId}`)
         .then(response => response.json())

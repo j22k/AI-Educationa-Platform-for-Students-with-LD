@@ -144,6 +144,7 @@ def dysgraphia_image():
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
         recognized_text = recognize_text_from_image(image)
+        print(recognized_text)
 
         writing_data = {
             "writingTasks": [
@@ -155,7 +156,7 @@ def dysgraphia_image():
                 }
             ]
         }
-
+        print(f"\n\n\n Writing Data: {writing_data}")
         response = add_dysgraphia_image_data(writing_data, user_id)
 
         return jsonify({
@@ -299,6 +300,15 @@ def process_audio():
     print("❌ Invalid file format")
     return jsonify({'error': 'Invalid file format'}), 400
 
+@bp_user.route('/users/submitassesment', methods=['POST'])
+def submit_assesment_route():
+    try:
+        data = request.get_json()
+        response = HistoryAssesment(data)
+        print(f"\n\n response : {response} ")
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"message": "Server error"}), 500
 
 @bp_user.route('/users/ld_identification', methods=['POST'])
 def ld_identification():
@@ -394,7 +404,6 @@ def assessment_result():
     except Exception as e:
         print(f"❌ Error processing assessment request: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
-    
 
 @bp_user.route('/users/rl_action', methods=['GET'])
 def rl_action():
